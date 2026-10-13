@@ -1,0 +1,52 @@
+[
+  {
+    "#": "1",
+    "Case": "Valid ref, simple inquiry",
+    "Result": "`auto_reply`, reply matches record"
+  },
+  {
+    "#": "2",
+    "Case": "Valid ref, date change",
+    "Result": "`auto_reply`, new date extracted, no availability promised"
+  },
+  {
+    "#": "3",
+    "Case": "Valid ref, urgent cancellation",
+    "Result": "Slack alert with booking ref"
+  },
+  {
+    "#": "4",
+    "Case": "Garbled ref (`BK45Z1`)",
+    "Result": "`not_found`, no false match"
+  },
+  {
+    "#": "5",
+    "Case": "No ref in message",
+    "Result": "`not_found`, `booking_ref` is `null`, nothing hallucinated"
+  },
+  {
+    "#": "6",
+    "Case": "Relative date (\"next Friday\")",
+    "Result": "`auto_reply`, date not inferred, reply asks for a specific date"
+  },
+  {
+    "#": "7",
+    "Case": "Ambiguous intent",
+    "Result": "`auto_reply`, asks for the preferred new time"
+  },
+  {
+    "#": "8",
+    "Case": "Very short message",
+    "Result": "`not_found`, no fields invented"
+  },
+  {
+    "#": "9",
+    "Case": "Mixed language (Roman Urdu + English)",
+    "Result": "Extracted and handled correctly"
+  },
+  {
+    "#": "10",
+    "Case": "Same ref twice, back to back",
+    "Result": "Both processed [CONFIRM: two rows in `inquiry_log`]"
+  }
+]

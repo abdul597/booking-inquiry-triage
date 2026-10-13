@@ -1,0 +1,555 @@
+{
+  "name": "booking-inquiry-intake",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "/booking-inquiry",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -2400,
+        288
+      ],
+      "id": "cb9ec8ba-c612-4a9d-81ce-0a5f77703270",
+      "name": "Webhook",
+      "webhookId": "c5cd2898-2536-4849-adea-8ad4a51c6ee0"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"status\": \"processed\",\n  \"branch\": \"{{$json.branch }}\",\n  \"booking_reference\": \"{{ $json.booking_ref }}\",\n  \"reply\": \"{{ $json.reply_text }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        1184,
+        240
+      ],
+      "id": "a213a3bc-745d-47cb-9117-7e08a706c564",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "78d5d15b-bcd1-431b-97c5-4b1ae7f5cd6a",
+                    "leftValue": "={{ $json.booking_found === true && $json.urgency === \"high\" }}",
+                    "rightValue": "=true",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "true",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "escalate"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.booking_found }}",
+                    "rightValue": false,
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "equals"
+                    },
+                    "id": "97b3a81e-b787-4585-b75a-8d5ed4b9e204"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "not_found"
+            }
+          ]
+        },
+        "looseTypeValidation": true,
+        "options": {
+          "fallbackOutput": "extra",
+          "renameFallbackOutput": "auto_reply"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -384,
+        448
+      ],
+      "id": "f54108f1-fb31-404c-9f08-a1726122f577",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "{\n  \"booking_ref\": \"{{ $json.booking_ref || null }}\",\n  \"route\": null,\n  \"original_date\": null,\n  \"new_date\": null,\n  \"requested_change\": null,\n  \"intent\": null,\n  \"urgency\": null,\n  \"branch\": \"not_found\",\n  \"reply_text\": \"Booking reference not found. Please verify and resend.\"\n}",
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        0,
+        400
+      ],
+      "id": "c213f5e1-e068-43d8-8099-3582cdf98ae3",
+      "name": "not_found"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"booking_ref\": {{ $('Urgency & Intent').item.json.booking_ref }},\n  \"route\": null,\n  \"original_date\": null,\n  \"new_date\": null,\n  \"requested_change\": null,\n  \"intent\": null,\n  \"urgency\": null,\n  \"branch\": \"not_found\",\n  \"reply_text\": \"Booking reference not found. Please verify and resend.\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        320,
+        368
+      ],
+      "id": "63351662-99fe-440a-a508-653e1cc9bc38",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "YOUR_SLACK_CHANNEL_ID",
+          "mode": "id"
+        },
+        "text": "=Hi, Please take up this booking {{$input.item.json.booking_ref}} and contact the customer",
+        "otherOptions": {}
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.6,
+      "position": [
+        48,
+        -96
+      ],
+      "id": "85ff4328-af03-4172-8f42-29b2cd88c3ec",
+      "name": "Send a message",
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5.4-nano",
+          "mode": "list",
+          "cachedResultName": "GPT-5.4-NANO"
+        },
+        "responses": {
+          "values": [
+            {
+              "content": "=Extract booking details from this customer message. Do NOT infer or calculate any date that is not explicitly stated as a specific date in the message. If a date is relative (e.g. 'next Friday', 'in two weeks') and not given as an explicit date, return null for that field. Every date should be in the format YYYY-MM-DD. Message: {{ $json.body.message }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {
+          "textFormat": {
+            "textOptions": {
+              "type": "json_schema",
+              "schema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"booking_ref\": {\"type\": [\"string\", \"null\"]},\n    \"route\": {\"type\": [\"string\", \"null\"]},\n    \"original_date\": {\"type\": [\"string\", \"null\"]},\n    \"new_date\": {\"type\": [\"string\", \"null\"]},\n    \"requested_change\": {\"type\": [\"string\", \"null\"]}\n  },\n  \"additionalProperties\": false,\n  \"required\": [\"booking_ref\", \"route\", \"original_date\", \"new_date\", \"requested_change\"]\n}",
+              "strict": true
+            }
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        -2000,
+        64
+      ],
+      "id": "25e83fe7-b133-4240-addc-bebe837487d9",
+      "name": "Extract Inquiry Info"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const extracted = $input.item.json.output[0].content[0].text;\n\nreturn {\n  json: {\n    booking_ref: extracted.booking_ref,\n    route: extracted.route,\n    original_date: extracted.original_date,\n    new_date: extracted.new_date,\n    requested_change: extracted.requested_change\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1616,
+        288
+      ],
+      "id": "897fe670-e478-494b-b9ea-2533c7742bae",
+      "name": "Ensure Json Format"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT * FROM bookings WHERE booking_ref = $1",
+        "options": {
+          "queryReplacement": "={{ [$json.booking_ref || '']}}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        -1440,
+        688
+      ],
+      "id": "74c1e473-c253-4030-bc43-50dd61e4b15f",
+      "name": "DB Query for Booking",
+      "alwaysOutputData": true,
+      "executeOnce": false,
+      "retryOnFail": true,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const classified = $input.item.json.output[0].content[0].text;\n\nlet postgresResult;\ntry {\n  postgresResult = $('DB Query for Booking').item.json;\n} catch (e) {\n  postgresResult = {};\n}\n\nreturn {\n  json: {\n    ...$('Ensure Json Format').item.json,\n    booking_found: postgresResult && postgresResult.booking_ref ? true : false,\n    intent: classified.intent,\n    urgency: classified.urgency\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1072,
+        496
+      ],
+      "id": "5e2ca590-e62b-4b67-a48b-adc0d566676e",
+      "name": "Urgency & Intent"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const rawText = $input.item.json.output[0].content[0].text;\n\nreturn {\n  json: {\n    ...$('Urgency & Intent').item.json,  // carries forward booking_ref, route, intent, urgency, etc.\n    reply_text: rawText.trim(),\n    branch: 'auto_reply'\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        336,
+        608
+      ],
+      "id": "88e04f4d-c438-47d6-994b-954a7a9fbeaf",
+      "name": "Compose Final JSon"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5.4-nano",
+          "mode": "list",
+          "cachedResultName": "GPT-5.4-NANO"
+        },
+        "responses": {
+          "values": [
+            {
+              "content": "=You are drafting a reply to a customer flight booking inquiry.\n\nCustomer's extracted request:\n{{ JSON.stringify($node[\"Ensure Json Format\"].json) }}\n\nMatching booking record:\n{{ JSON.stringify($node[\"DB Query for Booking\"].json) }}\n\nClassified intent: {{ $node[\"Urgency & Intent\"].json.intent }}\nClassified urgency: {{ $node[\"Urgency & Intent\"].json.urgency }}\n\nWrite a short, professional reply (3-5 sentences) confirming or addressing the requested change based on the booking record above. Do not invent information not present in the booking record. If the requested_change cannot be fulfilled from the record, say so politely and note it will be reviewed.\n\nOutput plain text only, no JSON, no markdown."
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        -48,
+        656
+      ],
+      "id": "9549e3ad-e990-467c-83a2-d2291a8cab61",
+      "name": "Generate Auto Reply"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-5.4-nano",
+          "mode": "list",
+          "cachedResultName": "GPT-5.4-NANO"
+        },
+        "responses": {
+          "values": [
+            {
+              "content": "=Classify this customer service message. Intent must be one of: date_change, cancellation, inquiry, complaint, other. Urgency must be one of: low, medium, high — base urgency on tone, stated deadlines, or words like 'urgent', 'asap', 'emergency'. Message: {{ $('Webhook').item.json.body.message }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {
+          "textFormat": {
+            "textOptions": {
+              "type": "json_schema",
+              "schema": "{\n  \"type\": \"object\",\n  \"properties\": {\n    \"intent\": {\n      \"type\": \"string\",\n      \"enum\": [\"date_change\", \"cancellation\", \"inquiry\", \"complaint\", \"other\"]\n    },\n    \"urgency\": {\n      \"type\": \"string\",\n      \"enum\": [\"low\", \"medium\", \"high\"]\n    }\n  },\n  \"additionalProperties\": false,\n  \"required\": [\"intent\", \"urgency\"]\n}",
+              "strict": true
+            }
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.3,
+      "position": [
+        -1312,
+        48
+      ],
+      "id": "0f75ad94-be07-4013-8bb3-ef9eeb87360c",
+      "name": "Classify Intent & Urgency"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "1c66e4c1-b720-48b1-b96e-9e7ab20e9b3c",
+              "name": "branch",
+              "value": "escalate",
+              "type": "string"
+            },
+            {
+              "id": "17c6f760-1384-46ed-b84f-e07da70a51df",
+              "name": "=reply_text",
+              "value": "Thank you for contacting us. Your request has been flagged as urgent and escalated to a member of our team, who will contact you shortly",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        432,
+        0
+      ],
+      "id": "dd850aa9-6713-4230-b623-2d16d3c95cd4",
+      "name": "escalate_holding"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO inquiry_log\n(booking_ref, route, original_date, new_date, requested_change, intent, urgency, branch, reply_text, raw_message)\nVALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)\nRETURNING branch, reply_text, booking_ref",
+        "options": {
+          "queryReplacement": "={{ [$('Urgency & Intent').item.json.booking_ref, $json.route, $json.original_date, $json.new_date, $json.requested_change, $json.intent, $json.urgency, $json.branch, $json.reply_text, $('Webhook').item.json.body.message] }}",
+          "replaceEmptyStrings": true
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.7,
+      "position": [
+        704,
+        288
+      ],
+      "id": "68663243-2b7a-43a8-ada2-2116d158680b",
+      "name": "Action Log",
+      "alwaysOutputData": true,
+      "executeOnce": false,
+      "retryOnFail": true,
+      "waitBetweenTries": 2000
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Extract Inquiry Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "not_found",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Generate Auto Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "not_found": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Action Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Inquiry Info": {
+      "main": [
+        [
+          {
+            "node": "Ensure Json Format",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ensure Json Format": {
+      "main": [
+        [
+          {
+            "node": "DB Query for Booking",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DB Query for Booking": {
+      "main": [
+        [
+          {
+            "node": "Classify Intent & Urgency",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Urgency & Intent": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compose Final JSon": {
+      "main": [
+        [
+          {
+            "node": "Action Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Auto Reply": {
+      "main": [
+        [
+          {
+            "node": "Compose Final JSon",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Classify Intent & Urgency": {
+      "main": [
+        [
+          {
+            "node": "Urgency & Intent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        [
+          {
+            "node": "escalate_holding",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "escalate_holding": {
+      "main": [
+        [
+          {
+            "node": "Action Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Action Log": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false,
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "nodeGroups": [],
+  "pinData": {},
+  "tags": []
+}

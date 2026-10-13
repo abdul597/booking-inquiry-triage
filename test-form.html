@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Booking Inquiry Triage - test form</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 640px; margin: 2rem auto; padding: 0 1rem; }
+  textarea, input { width: 100%; box-sizing: border-box; font: inherit; padding: .5rem; }
+  textarea { min-height: 7rem; }
+  button { margin-top: .75rem; padding: .5rem 1rem; font: inherit; cursor: pointer; }
+  pre { background: #f3f3f3; padding: 1rem; overflow-x: auto; white-space: pre-wrap; }
+  label { display: block; margin-top: 1rem; font-weight: 600; }
+</style>
+</head>
+<body>
+<h1>Booking Inquiry Triage</h1>
+<label for="url">Webhook URL</label>
+<input id="url" value="http://localhost:5679/webhook/booking-inquiry">
+<label for="msg">Customer message</label>
+<textarea id="msg">Hi, booking ABC123. Could I move my flight from 2026-11-10 to 2026-11-17?</textarea>
+<button id="send">Send</button>
+<h2>Response</h2>
+<pre id="out">(nothing sent yet)</pre>
+<script>
+document.getElementById("send").addEventListener("click", async () => {
+  const out = document.getElementById("out");
+  out.textContent = "Sending...";
+  try {
+    const res = await fetch(document.getElementById("url").value, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message: document.getElementById("msg").value })
+    });
+    const text = await res.text();
+    try { out.textContent = res.status + "\n" + JSON.stringify(JSON.parse(text), null, 2); }
+    catch { out.textContent = res.status + "\n" + text; }
+  } catch (e) {
+    out.textContent = "Request failed: " + e.message + "\n(Is the workflow active and the stack running?)";
+  }
+});
+</script>
+</body>
+</html>
