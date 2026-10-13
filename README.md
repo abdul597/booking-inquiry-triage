@@ -54,7 +54,7 @@ Canvas screenshot: `docs/canvas.png`
 Requirements: Docker with Compose v2, an OpenAI API key, and a Slack app/bot token with access to a channel.
 
 ```bash
-git clone https://github.com/YOUR_GITHUB_USERNAME/booking-inquiry-triage.git
+git clone https://github.com/abdul597/booking-inquiry-triage.git
 cd booking-inquiry-triage
 cp .env.example .env        # then set POSTGRES_PASSWORD
 docker compose up -d
