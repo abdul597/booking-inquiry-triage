@@ -112,10 +112,6 @@ docker compose exec postgres psql -U n8n -d n8n -c "select id, booking_ref, inte
 - `N8N_ENCRYPTION_KEY` is not set, so n8n generates one inside the `n8n_data` volume. Deleting that volume makes saved credentials unreadable.
 - Compose runs n8n over plain HTTP with `N8N_SECURE_COOKIE=false`, which is fine for local use only.
 
-## Demo
-
-Walkthrough video: LOOM_URL
-
 ## License
 
 MIT
