@@ -114,7 +114,7 @@ docker compose exec postgres psql -U n8n -d n8n -c "select id, booking_ref, inte
 
 ## Demo
 
-Walkthrough video: PASTE_YOUR_LOOM_LINK_HERE
+Walkthrough video: https://www.loom.com/share/1262de1152b646db90705ba22f68b610
 
 ## License
 
