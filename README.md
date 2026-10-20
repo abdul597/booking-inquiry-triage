@@ -101,7 +101,7 @@ docker compose exec postgres psql -U n8n -d n8n -c "select id, booking_ref, inte
 | 7 | Ambiguous intent | `auto_reply`, asks for the preferred new time |
 | 8 | Very short message | `not_found`, no fields invented |
 | 9 | Mixed language (Roman Urdu + English) | Extracted and handled correctly |
-| 10 | Same ref twice, back to back | Both processed [CONFIRM: two rows in `inquiry_log`] |
+| 10 | Same ref twice, back to back | Both processed |
 
 ## Known limitations
 
@@ -111,6 +111,10 @@ docker compose exec postgres psql -U n8n -d n8n -c "select id, booking_ref, inte
 - The holding reply on the escalate branch is static text.
 - `N8N_ENCRYPTION_KEY` is not set, so n8n generates one inside the `n8n_data` volume. Deleting that volume makes saved credentials unreadable.
 - Compose runs n8n over plain HTTP with `N8N_SECURE_COOKIE=false`, which is fine for local use only.
+
+## Demo
+
+Walkthrough video: PASTE_YOUR_LOOM_LINK_HERE
 
 ## License
 
